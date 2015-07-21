@@ -201,7 +201,7 @@ class SpiceworksSpider(Spider):
     def parse_mention_link(self, response):
 
         TOPIC_BY_XPATH = '//div[@class="title-and-controls"]//a[@class="user"]/text()'
-        TOPIC_TIMESTAMP_XPATH = '//div[@class="title-and-controls"]//span[@data-js-postprocess="timestamp"]/text()'
+        TOPIC_TIMESTAMP_XPATH = '//div[@class="title-and-controls"]//span[@data-js-postprocess="timestamp"]/@datetime'
         TITLE_XPATH = '//div[@class="title-and-controls"]/h1/a/text()'
         TOPIC_CONTENT_XPATH = '//div[@id="root_post"]/p//text()'
         TOPIC_RESOURCE_XPATH = '//div[@class="title-and-controls"]//div[@class="classification"]/a/text()'
