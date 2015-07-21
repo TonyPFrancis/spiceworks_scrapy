@@ -1,7 +1,7 @@
 .directory
 .idea
 
-
-
+*.log
+*.pyc
 *.csv
 .~lock.*
