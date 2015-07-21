@@ -156,14 +156,14 @@ class SpiceworksSpider(Spider):
         review_sels = sel.xpath(REVIEW_SEL_XPATH)
         if review_sels:
             REVIEW_RATING_XPATH = './/span[@class="stars"]/meta[@itemprop="ratingValue"]/@content'
-            REVIEW_AT_XPATH = './/span[@class="comment_date info"]//time[@itemprop="datePublished"]/text()'
+            REVIEW_AT_XPATH = './/span[@class="comment_date info"]//time[@itemprop="datePublished"]/@datetime'
             REVIEW_BY_XPATH = './/div[@class="user-info"]//a[@itemprop="author"]/text()'
             REVIEW_TEXT_XPATH = './/div[@itemprop="reviewBody"]/p//text()'
             for review_sel in review_sels:
                 review_rating = review_sel.xpath(REVIEW_RATING_XPATH).extract()
                 review_rating = review_rating[0].strip() if review_rating else ''
                 review_at = review_sel.xpath(REVIEW_AT_XPATH).extract()
-                review_at = review_at[0].strip() if review_at else ''
+                review_at = parser.parse(review_at[0].strip()).replace(tzinfo=None) if review_at else ''
                 review_by = review_sel.xpath(REVIEW_BY_XPATH).extract()
                 review_by = review_by[0].strip() if review_by else ''
                 review = review_sel.xpath(REVIEW_TEXT_XPATH).extract()
