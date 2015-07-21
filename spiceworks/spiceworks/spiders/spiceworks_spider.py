@@ -249,7 +249,7 @@ class SpiceworksSpider(Spider):
         reply_sels = topic_sel.xpath(REPLY_SELS_XPATH)
         if reply_sels:
             REPLY_BY_XPATH = './/span[@class="author"]/a/text()'
-            REPLY_AT_XPATH = './/span[@class="date"]//span[@data-js-postprocess="timestamp"]/text()'
+            REPLY_AT_XPATH = './/span[@class="date"]//span[@data-js-postprocess="timestamp"]/@datetime'
             REPLY_CONTENT_XPATH = './/div[@class="post-body"]/p//text()'
             for reply_sel in reply_sels:
                 reply_by = reply_sel.xpath(REPLY_BY_XPATH).extract()
