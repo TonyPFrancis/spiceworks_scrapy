@@ -221,6 +221,7 @@ class SpiceworksSpider(Spider):
         resource = resource[0].strip() if resource else ''
         number_of_replies = topic_sel.xpath(REPLY_NUMBER_XPATH).extract()
         number_of_replies = number_of_replies[0].strip() if number_of_replies else ''
+        number_of_replies = number_of_replies.strip('Replies').strip()
 
         reply_list = self.parse_mention_reply(topic_sel)
         topic_item = TopicItem()
