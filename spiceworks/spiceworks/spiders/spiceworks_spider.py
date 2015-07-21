@@ -212,7 +212,7 @@ class SpiceworksSpider(Spider):
         topic_by = topic_sel.xpath(TOPIC_BY_XPATH).extract()
         topic_by = topic_by[0].strip() if topic_by else ''
         timestamp = topic_sel.xpath(TOPIC_TIMESTAMP_XPATH).extract()
-        timestamp = timestamp[0].strip() if timestamp else ''
+        timestamp = parser.parse(timestamp[0].strip()).replace(tzinfo=None) if timestamp else ''
         title = topic_sel.xpath(TITLE_XPATH).extract()
         title = title[0].strip() if title else ''
         topic_content = topic_sel.xpath(TOPIC_CONTENT_XPATH).extract()
