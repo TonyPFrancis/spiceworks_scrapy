@@ -26,7 +26,7 @@ class SpiceworksSpider(Spider):
     TIMEZONE = ''
     BASE_URL = 'http://community.spiceworks.com'
     search_keyword = 'dell'
-    EXPORT_ITEM = 'TOPIC'    # [MAIN, TOPIC]
+    EXPORT_ITEM = 'MAIN'    # [MAIN, TOPIC]
 
     def __init__(self, name=None, **kwargs):
         ScrapyFileLogObserver(open("spider.log", 'w'), level=log.INFO).start()
