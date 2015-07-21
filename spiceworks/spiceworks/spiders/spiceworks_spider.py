@@ -255,7 +255,7 @@ class SpiceworksSpider(Spider):
                 reply_by = reply_sel.xpath(REPLY_BY_XPATH).extract()
                 reply_by = reply_by[0].strip() if reply_by else ''
                 reply_at = reply_sel.xpath(REPLY_AT_XPATH).extract()
-                reply_at = reply_at[0].strip() if reply_at else ''
+                reply_at = parser.parse(reply_at[0].strip()).replace(tzinfo=None) if reply_at else ''
                 reply = reply_sel.xpath(REPLY_CONTENT_XPATH).extract()
                 reply = ' '.join(' '.join(reply).split()) if reply else ''
                 reply_list.append({'reply_by':reply_by,
