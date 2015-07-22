@@ -57,12 +57,11 @@ class SpiceworksSpider(Spider):
                 product_title = item.get('name', '')
                 model_number = item.get('model', '')
                 product_rating = item.get('avg_rating', '')
-                number_of_replies = str(item.get('times_rated', ''))
                 if _id:
                     meta_data = {'_id': _id,
+                                 'product_title': product_title,
                                  'model_number': model_number,
-                                 'product_rating': product_rating,
-                                 'number_of_replies': number_of_replies}
+                                 'product_rating': product_rating}
                     product_url = product_url+_id
                     yield Request(url=product_url, dont_filter=True, callback=self.parse_product, meta=meta_data)
         else:
