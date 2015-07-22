@@ -27,7 +27,7 @@ class SpiceworksSpider(Spider):
     TIMEZONE = ''
     BASE_URL = 'http://community.spiceworks.com'
     search_keyword = 'dell'
-    EXPORT_ITEM = 'MAIN'    # [MAIN, TOPIC]
+    EXPORT_ITEM = 'TOPIC'    # [MAIN, TOPIC]
 
     def __init__(self, name=None, **kwargs):
         ScrapyFileLogObserver(open("spider.log", 'w'), level=log.INFO).start()
@@ -168,7 +168,7 @@ class SpiceworksSpider(Spider):
         product_title = meta_data['product_title']
         total_number_of_mentions = sel.xpath(TOTAL_NUMBER_OF_MENTION_XPATH).extract()
         total_number_of_mentions = total_number_of_mentions[0].strip() if total_number_of_mentions else ''
-        mentions_list = self.parse_mentions(sel)
+        mentions_list = self.parse_mentions(meta_data['_id'], total_number_of_mentions)
 
         topic_item = TopicItem()
         topic_item['product_title'] = product_title
@@ -181,9 +181,26 @@ class SpiceworksSpider(Spider):
         else:
             yield topic_item
 
-    def parse_mentions(self, sel):
+    def parse_mentions(self, product_id, total_number_of_mentions):
         mentions_list = []
-        MENTION_SEL_XPATH = '//*[contains(@class,"show-reviews show-mentions show-projects")]/li[@class="activity_feed_post "]'
+        if int(total_number_of_mentions) > 0:
+            for x in range(int(ceil(float(total_number_of_mentions)/31))):
+                fetch_mention_url = 'https://community.spiceworks.com/product/%s/activity?offset=%s&type=mentions&sort=new&rating=null'%(product_id, x*31)
+                mentions_list = mentions_list + self.fetch_mentions(fetch_mention_url)
+
+        return mentions_list
+
+    def fetch_mentions(self, fetch_mention_url):
+        HEADERS = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Encoding':'gzip, deflate, sdch',
+                    'Accept-Language':'en-US,en;q=0.8',
+                    'Cache-Control':'max-age=0',
+                    'Connection':'keep-alive',
+                    'Host':'community.spiceworks.com',
+                    'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36'}
+        sel = Selector(text=requests.get(url=fetch_mention_url, headers=HEADERS).content)
+        mentions_list = []
+        MENTION_SEL_XPATH = '//li[@class="activity_feed_post "]'
 
         mention_sels = sel.xpath(MENTION_SEL_XPATH)
         if MENTION_SEL_XPATH:
@@ -213,7 +230,7 @@ class SpiceworksSpider(Spider):
         mention_by = mention_by[0].strip() if mention_by else ''
         total_number_of_replies = topic_sel.xpath(TOTAL_NUMBER_OF_REPLIES).extract()
         total_number_of_replies = total_number_of_replies[0].strip() if total_number_of_replies else ''
-        total_number_of_replies = total_number_of_replies.strip('Replies').strip()
+        total_number_of_replies = total_number_of_replies.strip('Replies').strip('Reply').strip()
         reply_list = self.parse_mention_reply(topic_sel)
 
         topic_item = TopicItem()
