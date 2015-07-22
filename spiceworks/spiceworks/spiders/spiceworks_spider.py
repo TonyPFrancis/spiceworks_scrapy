@@ -7,6 +7,7 @@ from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
 from urlparse import urlparse, urljoin, parse_qs
 from scrapy.selector import Selector
 from time import sleep
+from math import ceil
 import urllib
 from spiceworks.items import MainItem, TopicItem
 from scrapy.http import Request
@@ -57,7 +58,7 @@ class SpiceworksSpider(Spider):
                 product_title = item.get('name', '')
                 model_number = item.get('model', '')
                 product_rating = item.get('avg_rating', '')
-                if _id:
+                if _id == 'SonicWALL--01-SSC-8854':
                     meta_data = {'_id': _id,
                                  'product_title': product_title,
                                  'model_number': model_number,
@@ -80,6 +81,7 @@ class SpiceworksSpider(Spider):
 
     def parse_product(self, response):
         sel = Selector(response)
+
         meta_data = response.meta
         if self.EXPORT_ITEM == 'MAIN':
             return self.parse_main(sel, meta_data)
@@ -98,7 +100,7 @@ class SpiceworksSpider(Spider):
         description = ' '.join(' '.join(description).split()) if description else ''
         total_number_of_reviews = sel.xpath(TOTAL_NUMBER_OF_REVIEWS_XPATH).extract()
         total_number_of_reviews = total_number_of_reviews[0].strip() if total_number_of_reviews else ''
-        reviews_list = self.parse_reviews(sel)
+        reviews_list = self.parse_reviews(meta_data['_id'], total_number_of_reviews)
 
         main_item = MainItem()
         main_item['product_title'] = product_title
@@ -116,7 +118,7 @@ class SpiceworksSpider(Spider):
         else:
             yield main_item
 
-    def parse_reviews(self, sel):
+    def parse_reviews(self, product_id, total_number_of_reviews):
         reviews_list = []
         REVIEW_SEL_XPATH = '//*[contains(@class,"show-reviews show-mentions show-projects")]/li[@class="review "]'
 
