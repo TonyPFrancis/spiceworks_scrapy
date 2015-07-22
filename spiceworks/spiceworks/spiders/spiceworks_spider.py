@@ -81,73 +81,40 @@ class SpiceworksSpider(Spider):
     def parse_product(self, response):
         sel = Selector(response)
         meta_data = response.meta
-        mention_link_fk_list = []
-        no_review = 0
-        no_mention = 0
+        if self.EXPORT_ITEM == 'MAIN':
+            return self.parse_main(sel, meta_data)
+        elif self.EXPORT_ITEM == 'TOPIC':
+            return self.parse_topic(sel, meta_data)
 
-        PRODUCT_TITLE_XPATH = '//h1[@class="product-name"]/text()'
-        REVIEWS_XPATH = '//ul[@class="activity-filters"]/li[@class="reviews-filter"]//span/text()'
-        MENTIONS_XPATH = '//ul[@class="activity-filters"]/li[@class="mentions-filter"]//span/text()'
-        PROJECTS_XPATH = '//ul[@class="activity-filters"]/li[contains(@class,"projects-filter")]//span/text()'
+    def parse_main(self, sel, meta_data):
+
         DESCRIPTION_XPATH = '//div[@id="description_body"]/p//text()'
+        TOTAL_NUMBER_OF_REVIEWS_XPATH = '//ul[@class="activity-filters"]/li[@class="reviews-filter"]//span/text()'
 
+        product_title = meta_data['product_title']
         model_number = meta_data['model_number']
-        number_of_replies = meta_data['number_of_replies']
         product_rating = meta_data['product_rating']
         description = sel.xpath(DESCRIPTION_XPATH).extract()
         description = ' '.join(' '.join(description).split()) if description else ''
-        title = sel.xpath(PRODUCT_TITLE_XPATH).extract()
-        title = title[0].strip() if title else ''
-        reviews = sel.xpath(REVIEWS_XPATH).extract()
-        reviews = reviews[0].strip() if reviews else ''
-        mentions = sel.xpath(MENTIONS_XPATH).extract()
-        mentions = mentions[0].strip() if mentions else ''
-        projects = sel.xpath(PROJECTS_XPATH).extract()
-        projects = projects[0].strip() if projects else ''
+        total_number_of_reviews = sel.xpath(TOTAL_NUMBER_OF_REVIEWS_XPATH).extract()
+        total_number_of_reviews = total_number_of_reviews[0].strip() if total_number_of_reviews else ''
         reviews_list = self.parse_reviews(sel)
-        mentions_list = self.parse_mentions(sel)
 
         main_item = MainItem()
+        main_item['product_title'] = product_title
         main_item['model_number'] = model_number
-        main_item['number_of_replies'] = number_of_replies
         main_item['product_rating'] = product_rating
         main_item['description'] = description
-        main_item['reviews'] = reviews
-        main_item['mentions'] = mentions
+        main_item['total_number_of_reviews'] = total_number_of_reviews
         if reviews_list:
             for review_item in reviews_list:
                 main_item['review_by'] = review_item['review_by']
                 main_item['review_at'] = review_item['review_at']
                 main_item['review'] = review_item['review']
                 main_item['review_rating'] = review_item['review_rating']
-                if self.EXPORT_ITEM == 'MAIN':
-                    yield main_item
-            del main_item['review_by'], main_item['review_at'], main_item['review'], main_item['review_rating']
-        else:
-            no_review = 1
-        if mentions_list:
-            for mention_item in mentions_list:
-                main_item['mention_by'] = mention_item['mention_by']
-                main_item['resource'] = mention_item['resource']
-                main_item['mention_link_fk'] = mention_item['mention_link_fk']
-                if main_item['mention_link_fk']:
-                    mention_link_fk_list.append(main_item['mention_link_fk'])
-                # yields main items
-                if self.EXPORT_ITEM == 'MAIN':
-                    yield main_item
-        else:
-            no_mention = 1
-
-        if no_review == 1 and no_mention == 1:
-            if self.EXPORT_ITEM == 'MAIN':
                 yield main_item
-
-        mention_link_fk_list = list(set(mention_link_fk_list))
-        if mention_link_fk_list:
-            for mention_link_fk in mention_link_fk_list:
-                # yields topic item
-                if self.EXPORT_ITEM == 'TOPIC':
-                    yield Request(url=mention_link_fk, dont_filter=True, callback=self.parse_mention_link)
+        else:
+            yield main_item
 
     def parse_reviews(self, sel):
         reviews_list = []
@@ -155,19 +122,19 @@ class SpiceworksSpider(Spider):
 
         review_sels = sel.xpath(REVIEW_SEL_XPATH)
         if review_sels:
-            REVIEW_RATING_XPATH = './/span[@class="stars"]/meta[@itemprop="ratingValue"]/@content'
-            REVIEW_AT_XPATH = './/span[@class="comment_date info"]//time[@itemprop="datePublished"]/@datetime'
             REVIEW_BY_XPATH = './/div[@class="user-info"]//a[@itemprop="author"]/text()'
+            REVIEW_AT_XPATH = './/span[@class="comment_date info"]//time[@itemprop="datePublished"]/@datetime'
             REVIEW_TEXT_XPATH = './/div[@itemprop="reviewBody"]/p//text()'
+            REVIEW_RATING_XPATH = './/span[@class="stars"]/meta[@itemprop="ratingValue"]/@content'
             for review_sel in review_sels:
-                review_rating = review_sel.xpath(REVIEW_RATING_XPATH).extract()
-                review_rating = review_rating[0].strip() if review_rating else ''
-                review_at = review_sel.xpath(REVIEW_AT_XPATH).extract()
-                review_at = parser.parse(review_at[0].strip()).replace(tzinfo=None) if review_at else ''
                 review_by = review_sel.xpath(REVIEW_BY_XPATH).extract()
                 review_by = review_by[0].strip() if review_by else ''
+                review_at = review_sel.xpath(REVIEW_AT_XPATH).extract()
+                review_at = parser.parse(review_at[0].strip()).replace(tzinfo=None) if review_at else ''
                 review = review_sel.xpath(REVIEW_TEXT_XPATH).extract()
                 review = ' '.join(' '.join(review).split()) if review else ''
+                review_rating = review_sel.xpath(REVIEW_RATING_XPATH).extract()
+                review_rating = review_rating[0].strip() if review_rating else ''
                 reviews_list.append({'review_rating': review_rating,
                                      'review_at': review_at,
                                      'review_by': review_by,
@@ -175,63 +142,70 @@ class SpiceworksSpider(Spider):
 
         return reviews_list
 
+    def parse_topic(self, sel, meta_data):
+
+        TOTAL_NUMBER_OF_MENTION_XPATH = '//ul[@class="activity-filters"]/li[@class="mentions-filter"]//span/text()'
+
+        product_title = meta_data['product_title']
+        total_number_of_mentions = sel.xpath(TOTAL_NUMBER_OF_MENTION_XPATH).extract()
+        total_number_of_mentions = total_number_of_mentions[0].strip() if total_number_of_mentions else ''
+        mentions_list = self.parse_mentions(sel)
+
+        topic_item = TopicItem()
+        topic_item['product_title'] = product_title
+        topic_item['total_number_of_mentions'] = total_number_of_mentions
+        if mentions_list:
+            for mention_item in mentions_list:
+                if mention_item['mention_link_fk']:
+                    meta_data['total_number_of_mentions'] = total_number_of_mentions
+                    yield Request(url=mention_item['mention_link_fk'], dont_filter=True, callback=self.parse_mention_link, meta=meta_data)
+        else:
+            yield topic_item
+
     def parse_mentions(self, sel):
         mentions_list = []
         MENTION_SEL_XPATH = '//*[contains(@class,"show-reviews show-mentions show-projects")]/li[@class="activity_feed_post "]'
 
         mention_sels = sel.xpath(MENTION_SEL_XPATH)
         if MENTION_SEL_XPATH:
-            MENTION_BY_XPATH = './/div[@class="user-info"]//a[@class="user profile_link "]/text()'
-            MENTION_RESOURCE_XPATH = './/div[@class="user-info"]/span[@class="info"]/text()'
             MENTION_LINK_XPATH = './/a[@class="root_post_title"]/@href'
             for mention_sel in mention_sels:
-                mention_by = mention_sel.xpath(MENTION_BY_XPATH).extract()
-                mention_by = mention_by[0].strip() if mention_by else ''
-                resource = mention_sel.xpath(MENTION_RESOURCE_XPATH).extract()
-                resource = resource[0].strip() if resource else ''
-                resource = resource.lstrip('posted in').strip()
                 mention_link_fk = mention_sel.xpath(MENTION_LINK_XPATH).extract()
                 mention_link_fk = (mention_link_fk[0] if mention_link_fk[0].startswith('http') else self.BASE_URL+mention_link_fk[0]) if mention_link_fk else ''
-                mentions_list.append({'mention_by': mention_by,
-                                      'resource': resource,
-                                      'mention_link_fk': mention_link_fk})
+                mentions_list.append({'mention_link_fk': mention_link_fk})
 
         return mentions_list
 
     def parse_mention_link(self, response):
+        meta_data = response.meta
 
-        TOPIC_BY_XPATH = '//div[@class="title-and-controls"]//a[@class="user"]/text()'
-        TOPIC_TIMESTAMP_XPATH = '//div[@class="title-and-controls"]//span[@data-js-postprocess="timestamp"]/@datetime'
-        TITLE_XPATH = '//div[@class="title-and-controls"]/h1/a/text()'
-        TOPIC_CONTENT_XPATH = '//div[@id="root_post"]/p//text()'
-        TOPIC_RESOURCE_XPATH = '//div[@class="title-and-controls"]//div[@class="classification"]/a/text()'
-        REPLY_NUMBER_XPATH = '//section[@class="replies"]/h2/text()'
+        MENTION_TITLE_XPATH = '//div[@class="title-and-controls"]/h1/a/text()'
+        MENTION_CONTENT_XPATH = '//div[@id="root_post"]/p//text()'
+        MENTION_BY_XPATH = '//div[@class="title-and-controls"]//a[@class="user"]/text()'
+        TOTAL_NUMBER_OF_REPLIES = '//section[@class="replies"]/h2/text()'
 
         topic_sel = Selector(response)
         mention_link_fk = response.url
-        topic_by = topic_sel.xpath(TOPIC_BY_XPATH).extract()
-        topic_by = topic_by[0].strip() if topic_by else ''
-        timestamp = topic_sel.xpath(TOPIC_TIMESTAMP_XPATH).extract()
-        timestamp = parser.parse(timestamp[0].strip()).replace(tzinfo=None) if timestamp else ''
-        title = topic_sel.xpath(TITLE_XPATH).extract()
-        title = title[0].strip() if title else ''
-        topic_content = topic_sel.xpath(TOPIC_CONTENT_XPATH).extract()
-        topic_content = ' '.join(' '.join(topic_content).split()) if topic_content else ''
-        resource = topic_sel.xpath(TOPIC_RESOURCE_XPATH).extract()
-        resource = resource[0].strip() if resource else ''
-        number_of_replies = topic_sel.xpath(REPLY_NUMBER_XPATH).extract()
-        number_of_replies = number_of_replies[0].strip() if number_of_replies else ''
-        number_of_replies = number_of_replies.strip('Replies').strip()
-
+        mention_title = topic_sel.xpath(MENTION_TITLE_XPATH).extract()
+        mention_title = mention_title[0].strip() if mention_title else ''
+        mention_content = topic_sel.xpath(MENTION_CONTENT_XPATH).extract()
+        mention_content = ' '.join(' '.join(mention_content).split()) if mention_content else ''
+        mention_by = topic_sel.xpath(MENTION_BY_XPATH).extract()
+        mention_by = mention_by[0].strip() if mention_by else ''
+        total_number_of_replies = topic_sel.xpath(TOTAL_NUMBER_OF_REPLIES).extract()
+        total_number_of_replies = total_number_of_replies[0].strip() if total_number_of_replies else ''
+        total_number_of_replies = total_number_of_replies.strip('Replies').strip()
         reply_list = self.parse_mention_reply(topic_sel)
+
         topic_item = TopicItem()
+        topic_item['product_title'] = meta_data['product_title']
+        topic_item['total_number_of_mentions'] = meta_data['total_number_of_mentions']
         topic_item['mention_link_fk'] = mention_link_fk
-        topic_item['topic_by'] = topic_by
-        topic_item['timestamp'] = timestamp
-        topic_item['title'] = title
-        topic_item['topic'] = topic_content
-        topic_item['resource'] = resource
-        topic_item['number_of_replies'] = number_of_replies
+        topic_item['mention_title'] = mention_title
+        topic_item['mention_content'] = mention_content
+        topic_item['mention_by'] = mention_by
+        topic_item['total_number_of_replies'] = total_number_of_replies
+
         if reply_list:
             for reply_item in reply_list:
                 topic_item['reply_by'] = reply_item['reply_by']
