@@ -123,9 +123,22 @@ class SpiceworksSpider(Spider):
         if int(total_number_of_reviews) > 0:
             for x in range(int(ceil(float(total_number_of_reviews)/31))):
                 fetch_review_url = 'https://community.spiceworks.com/product/%s/activity?offset=%s&type=reviews&sort=new&rating=null'%(product_id, x*31)
+                reviews_list = reviews_list + self.fetch_reviews(fetch_review_url)
 
+        return reviews_list
 
     def fetch_reviews(self, fetch_review_url):
+        HEADERS = {'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Encoding':'gzip, deflate, sdch',
+                    'Accept-Language':'en-US,en;q=0.8',
+                    'Cache-Control':'max-age=0',
+                    'Connection':'keep-alive',
+                    'Host':'community.spiceworks.com',
+                    'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36'}
+        sel = Selector(text=requests.get(url=fetch_review_url, headers=HEADERS).content)
+        reviews_list = []
+        REVIEW_SEL_XPATH = '//li[@class="review "]'
+
         review_sels = sel.xpath(REVIEW_SEL_XPATH)
         if review_sels:
             REVIEW_BY_XPATH = './/div[@class="user-info"]//a[@itemprop="author"]/text()'
