@@ -54,6 +54,7 @@ class SpiceworksSpider(Spider):
             for item in results:
                 product_url = self.BASE_URL+'/product/'
                 _id = str(item.get('id',''))
+                product_title = item.get('name', '')
                 model_number = item.get('model', '')
                 product_rating = item.get('avg_rating', '')
                 number_of_replies = str(item.get('times_rated', ''))
