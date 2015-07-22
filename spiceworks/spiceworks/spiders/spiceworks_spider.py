@@ -120,8 +120,12 @@ class SpiceworksSpider(Spider):
 
     def parse_reviews(self, product_id, total_number_of_reviews):
         reviews_list = []
-        REVIEW_SEL_XPATH = '//*[contains(@class,"show-reviews show-mentions show-projects")]/li[@class="review "]'
+        if int(total_number_of_reviews) > 0:
+            for x in range(int(ceil(float(total_number_of_reviews)/31))):
+                fetch_review_url = 'https://community.spiceworks.com/product/%s/activity?offset=%s&type=reviews&sort=new&rating=null'%(product_id, x*31)
 
+
+    def fetch_reviews(self, fetch_review_url):
         review_sels = sel.xpath(REVIEW_SEL_XPATH)
         if review_sels:
             REVIEW_BY_XPATH = './/div[@class="user-info"]//a[@itemprop="author"]/text()'
