@@ -27,7 +27,7 @@ class SpiceworksSpider(Spider):
     TIMEZONE = ''
     BASE_URL = 'http://community.spiceworks.com'
     search_keyword = 'dell'
-    EXPORT_ITEM = 'TOPIC'    # [MAIN, TOPIC]
+    EXPORT_ITEM = 'MAIN'    # [MAIN, TOPIC]
 
     def __init__(self, name=None, **kwargs):
         ScrapyFileLogObserver(open("spider.log", 'w'), level=log.INFO).start()
@@ -58,7 +58,7 @@ class SpiceworksSpider(Spider):
                 product_title = item.get('name', '')
                 model_number = item.get('model', '')
                 product_rating = item.get('avg_rating', '')
-                if _id == 'SonicWALL--01-SSC-8854':
+                if _id:
                     meta_data = {'_id': _id,
                                  'product_title': product_title,
                                  'model_number': model_number,
