@@ -123,6 +123,7 @@ class SpiceworksSpider(Spider):
         if total_number_of_reviews and (int(total_number_of_reviews) > 0):
             for x in range(int(ceil(float(total_number_of_reviews)/31))):
                 fetch_review_url = 'https://community.spiceworks.com/product/%s/activity?offset=%s&type=reviews&sort=new&rating=null'%(product_id, x*31)
+                sleep(5)
                 reviews_list = reviews_list + self.fetch_reviews(fetch_review_url)
 
         return reviews_list
@@ -186,6 +187,7 @@ class SpiceworksSpider(Spider):
         if total_number_of_mentions and (int(total_number_of_mentions) > 0):
             for x in range(int(ceil(float(total_number_of_mentions)/31))):
                 fetch_mention_url = 'https://community.spiceworks.com/product/%s/activity?offset=%s&type=mentions&sort=new&rating=null'%(product_id, x*31)
+                sleep(5)
                 mentions_list = mentions_list + self.fetch_mentions(fetch_mention_url)
 
         return mentions_list
